@@ -3,7 +3,7 @@ import torch.nn as nn
 import math
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self,embed_dim,d_model,n_heads,dropout):
+    def __init__(self,d_model,n_heads,dropout):
         """
         Param:
         ----------------------------------------
@@ -14,7 +14,6 @@ class MultiHeadAttention(nn.Module):
 
         """
         super().__init__()
-        self.embed_dim = embed_dim
         self.d_model = d_model 
         self.n_heads = n_heads
         self.dropout = nn.Dropout(dropout) 
@@ -22,9 +21,9 @@ class MultiHeadAttention(nn.Module):
         assert d_model % n_heads == 0,"d_model is not divisible by num_head"
 
         self.d_k = d_model // n_heads
-        self.w_q = nn.Linear(embed_dim,d_model)
-        self.w_k = nn.Linear(embed_dim,d_model)
-        self.w_v = nn.Linear(embed_dim,d_model)
+        self.w_q = nn.Linear(d_model,d_model)
+        self.w_k = nn.Linear(d_model,d_model)
+        self.w_v = nn.Linear(d_model,d_model)
         self.w_o = nn.Linear(d_model,d_model)
 
     def scaled_dot_attention(self,q,k,v,mask = None,dropout = None):
@@ -33,7 +32,7 @@ class MultiHeadAttention(nn.Module):
         ---------------------------------------------
 
 
-
+ 
         """
         d_k = q.shape[-1]
         score = torch.matmul(q,k.transpose(-2,-1))/math.sqrt(d_k)
@@ -54,9 +53,9 @@ class MultiHeadAttention(nn.Module):
         v = v.view(v.shape[0], v.shape[1], self.n_heads, self.d_k).transpose(1,2)
 
 
-        x,self.attn_score = self.scaled_dot_attention(q,k,v,mask,self.dropout)
+        x,attn_score = self.scaled_dot_attention(q,k,v,mask,self.dropout)
 
         x = x.transpose(1,2).contiguous().view(x.shape[0], -1, self.n_heads * self.d_k)
 
-        return self.w_o(x)
+        return self.w_o(x),attn_score
 
